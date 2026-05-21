@@ -7,24 +7,23 @@ from services.github_api import criar_issue
 load_dotenv()
 
 def executar_app():
-    # 1. Definir o que queremos da IA
-    comando_ia = """
-    Escreva o corpo de uma issue para o GitHub. 
-    Peça para as IAs informarem qual o caminho/endpoint que usam do 'Claudefire'.
-    Seja claro e amigável.
-    """
+    print("🤖 --- Assistente Gemini + GitHub --- 🐙\n")
     
-    # 2. Chamar o serviço do Gemini
+    # 1. Pede as informações diretamente no terminal
+    repo_alvo = input("📌 Repositório alvo (ex: JoaoRGLab/rhema-care-flow): ")
+    titulo_issue = input("🏷️  Título da Issue: ")
+    comando_ia = input("🧠 O que a IA deve escrever? (Descreva o contexto): ")
+    
+    print("\n⏳ Processando... Deixe a IA pensar e o GitHub agir.")
+    
+    # 2. Gera o texto com o Gemini
     texto_gerado = gerar_texto_issue(comando_ia)
     
-    # 3. Chamar o serviço do GitHub
-    repo_alvo = "JoaoRGLab/rhema-care-flow"
-    titulo_issue = "[Chamado AIs] Qual o caminho do Claudefire? 🤖"
-    
+    # 3. Cria a issue no GitHub
     link_resultado = criar_issue(repo_alvo, titulo_issue, texto_gerado)
     
-    print("\n✅ Processo Finalizado!")
-    print(f"Confira a issue em: {link_resultado}")
+    print("\n✅ Processo Finalizado com Sucesso!")
+    print(f"🔗 Confira o resultado em: {link_resultado}\n")
 
 if __name__ == "__main__":
     executar_app()
