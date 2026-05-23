@@ -1,6 +1,8 @@
-# Checklist de Validação — Integração Gemini no Gemibot / Rhema Care Flow
+# Checklist de Validação — Integração Gemini · Gemibot / Rhema Care Flow
 
-**Versão:** 1.0 | **Data:** 2026-05-23 | **Repositório:** [JoaoRG-lab/gemibot](https://github.com/JoaoRG-lab/gemibot)
+**Versão:** 2.0 | **Data:** 2026-05-23 | **Repositório:** [JoaoRG-lab/gemibot](https://github.com/JoaoRG-lab/gemibot)
+
+> Preencher **✓** (aprovado), **✗** (reprovado) ou **N/A**. Nunca registrar valores reais de chaves em "Evidência" — usar apenas "OK confirmado" ou similar.
 
 ---
 
@@ -10,52 +12,62 @@
 
 | # | Verificação | Critério de aprovação | ✓/✗ | Evidência |
 |---|---|---|---|---|
-| 1.1.1 | Chave gerada no Google AI Studio | URL: https://aistudio.google.com/app/apikey — chave começa com `AIza` | | |
-| 1.1.2 | `.env` local criado a partir de `.env.example` | Arquivo `.env` existe na raiz e **não** aparece no `git status` | | |
-| 1.1.3 | `.env` listado no `.gitignore` | `grep GEMINI .gitignore` retorna linha ou `.env` está coberto | | |
-| 1.1.4 | Variável carrega corretamente no Python | `python -c "from dotenv import load_dotenv; import os; load_dotenv(); print(bool(os.getenv('GEMINI_API_KEY')))"` → `True` | | |
+| 1.1.1 | Chave gerada no Google AI Studio | [aistudio.google.com](https://aistudio.google.com/app/apikey) — valor começa com `AIza` | | |
+| 1.1.2 | `.env` local criado a partir de `.env.example` | Arquivo `.env` existe na raiz e **não** aparece em `git status` | | |
+| 1.1.3 | `.env` coberto pelo `.gitignore` | `grep '\.env' .gitignore` retorna resultado | | |
+| 1.1.4 | Variável carregável no Python | `python -c "from dotenv import load_dotenv; import os; load_dotenv(); print(bool(os.getenv('GEMINI_API_KEY')))"` → `True` | | |
 
 ### 1.2 Dependências instaladas
 
-| # | Verificação | Critério de aprovação | ✓/✗ | Evidência |
+| # | Pacote | Comando de verificação | Versão mínima | ✓/✗ |
 |---|---|---|---|---|
-| 1.2.1 | `google-generativeai >= 0.7.0` instalada | `pip show google-generativeai` mostra versão ≥ 0.7 | | |
-| 1.2.2 | `python-dotenv >= 1.0.0` instalada | `pip show python-dotenv` mostra versão ≥ 1.0 | | |
-| 1.2.3 | `Pillow >= 10.0.0` instalada | `pip show Pillow` mostra versão ≥ 10 | | |
-| 1.2.4 | `PyGithub >= 2.0.0` instalada | `pip show PyGithub` mostra versão ≥ 2.0 | | |
+| 1.2.1 | `google-generativeai` | `pip show google-generativeai` | ≥ 0.7.0 | |
+| 1.2.2 | `python-dotenv` | `pip show python-dotenv` | ≥ 1.0.0 | |
+| 1.2.3 | `Pillow` | `pip show Pillow` | ≥ 10.0.0 | |
+| 1.2.4 | `PyGithub` | `pip show PyGithub` | ≥ 2.0.0 | |
+
+### 1.3 Estrutura de arquivos
+
+| # | Arquivo | Esperado | ✓/✗ |
+|---|---|---|---|
+| 1.3.1 | `services/gemini_api.py` | Existe e não está vazio | |
+| 1.3.2 | `main.py` | Existe e importa `ask_gemini` ou `gemini_api` | |
+| 1.3.3 | `AGENTS.md` | Existe com instruções de configuração | |
+| 1.3.4 | `.env.example` | Contém `GEMINI_API_KEY=` (sem valor real) | |
+| 1.3.5 | `requirements.txt` | Lista os 4 pacotes com versão mínima | |
 
 ---
 
 ## 2. Validação Local — `gemibot`
 
-### 2.1 Módulo `services/gemini_api.py`
+### 2.1 Importação e módulo `gemini_api`
 
-| # | Verificação | Comando / Critério | ✓/✗ | Evidência |
+| # | Verificação | Critério | ✓/✗ | Evidência |
 |---|---|---|---|---|
-| 2.1.1 | Arquivo existe no repo | `ls services/gemini_api.py` → sem erro | | |
-| 2.1.2 | Importação sem erros | `python -c "from services.gemini_api import ask_gemini"` → sem traceback | | |
-| 2.1.3 | `ask_gemini()` retorna string | Ver item 2.2 abaixo | | |
-| 2.1.4 | Fallback gracioso sem chave | Renomear `.env` temporariamente → importar → deve retornar mensagem de erro legível, **não** `KeyError` nem `AttributeError` | | |
+| 2.1.1 | Importação sem traceback | `python -c "from services.gemini_api import ask_gemini"` → sem erro | | |
+| 2.1.2 | `analyze_medical_image` exportada | `python -c "from services.gemini_api import analyze_medical_image"` → sem erro | | |
+| 2.1.3 | Fallback gracioso sem chave | Renomear `.env` temporariamente → `ask_gemini("teste")` → retorna `str` com mensagem de erro, **sem** `KeyError` ou `AttributeError` | | |
 
 ### 2.2 Teste de resposta básica
 
 ```bash
-# Execute no diretório raiz do gemibot
 python - <<'PY'
 from dotenv import load_dotenv
 load_dotenv()
 from services.gemini_api import ask_gemini
 
-resp = ask_gemini("Olá, você está funcionando?")
-print(type(resp), "—", resp[:120])
+resp = ask_gemini("Olá, você está funcionando? Responda em uma frase.")
+print(type(resp), "—", resp[:150])
+assert isinstance(resp, str) and len(resp) > 10, "FALHOU"
+print("OK")
 PY
 ```
 
-| Critério | Esperado |
-|---|---|
-| `type(resp)` | `<class 'str'>` |
-| Comprimento | > 10 caracteres |
-| Sem exceção | Nenhum traceback |
+| Critério | Esperado | ✓/✗ |
+|---|---|---|
+| `type(resp)` é `str` | `True` | |
+| `len(resp) > 10` | `True` | |
+| Sem exceção | Nenhum traceback | |
 
 ### 2.3 Teste com histórico de chat
 
@@ -66,18 +78,20 @@ load_dotenv()
 from services.gemini_api import ask_gemini
 
 historico = [
-    {"role": "user", "parts": ["Meu nome é João Otávio"]},
-    {"role": "model", "parts": ["Entendido, João Otávio!"]}
+    {"role": "user", "parts": ["Meu nome é João Otávio e sou reumatologista."]},
+    {"role": "model", "parts": ["Entendido, Dr. João Otávio!"]}
 ]
-resp = ask_gemini("Qual é meu nome?", history=historico)
+resp = ask_gemini("Qual é meu nome e especialidade?", history=historico)
 print(resp[:200])
+assert "João" in resp or "joao" in resp.lower(), "Contexto não preservado"
+print("OK")
 PY
 ```
 
-| Critério | Esperado |
-|---|---|
-| Resposta menciona "João" | `True` |
-| Sem exceção | Nenhum traceback |
+| Critério | Esperado | ✓/✗ |
+|---|---|---|
+| Resposta menciona "João" | `True` | |
+| Contexto de especialidade preservado | `True` | |
 
 ### 2.4 Teste de análise de imagem médica (Vision)
 
@@ -89,21 +103,54 @@ from services.gemini_api import analyze_medical_image
 from PIL import Image
 import io
 
-# Cria imagem de teste mínima
-img = Image.new("RGB", (100, 100), color=(200, 200, 200))
+img = Image.new("RGB", (200, 200), color=(180, 180, 180))
 buf = io.BytesIO()
 img.save(buf, format="JPEG")
 buf.seek(0)
 
 resp = analyze_medical_image(buf.read(), prompt="Descreva o que vê nesta imagem de teste.")
 print(type(resp), "—", resp[:200])
+assert isinstance(resp, str), "FALHOU"
+print("OK")
 PY
 ```
 
-| Critério | Esperado |
-|---|---|
-| `type(resp)` | `<class 'str'>` |
-| Sem exceção de tipo | Nenhum traceback |
+| Critério | Esperado | ✓/✗ |
+|---|---|---|
+| `type(resp)` é `str` | `True` | |
+| Sem exceção de tipo | Nenhum traceback | |
+
+### 2.5 Teste clínico reumatológico (qualidade da resposta)
+
+```bash
+python - <<'PY'
+from dotenv import load_dotenv
+load_dotenv()
+from services.gemini_api import ask_gemini
+
+pergunta = (
+    "Paciente 52 anos, FR positivo 1:320, anti-CCP positivo, "
+    "erosões em RX de mãos bilaterais, sinovite há 8 semanas. "
+    "Qual a classificação ACR/EULAR 2010 e a pontuação?"
+)
+resp = ask_gemini(pergunta)
+print(resp[:500])
+PY
+```
+
+| Critério | Esperado | ✓/✗ |
+|---|---|---|
+| Resposta menciona escore ≥ 6 pontos | `True` | |
+| Cita critérios (sorologia, imagem, duração) | `True` | |
+| Tom técnico/clínico mantido | `True` | |
+| Não alucina medicamentos sem solicitar | `True` | |
+
+### 2.6 Integração com `main.py`
+
+| # | Verificação | Critério | ✓/✗ |
+|---|---|---|---|
+| 2.6.1 | `python main.py` inicia sem traceback | Exit code 0 ou aguarda input (sem crash imediato) | |
+| 2.6.2 | `main.py` não expõe chave em stdout | Nenhuma linha com `AIza` na saída | |
 
 ---
 
@@ -113,117 +160,123 @@ PY
 
 | # | Verificação | Critério | ✓/✗ | Evidência |
 |---|---|---|---|---|
-| 3.1.1 | Secret `GEMINI_API_KEY` criado | Supabase Dashboard → Project Settings → Edge Functions → Secrets → nome `GEMINI_API_KEY` aparece na lista | | |
-| 3.1.2 | Valor começa com `AIza` | Confirmado no momento da criação (Supabase não exibe valor depois de salvo) | | |
+| 3.1.1 | Secret `GEMINI_API_KEY` criado | Supabase Dashboard → Project Settings → Edge Functions → Secrets → `GEMINI_API_KEY` aparece na lista | | |
+| 3.1.2 | Valor correto (confirmado no momento da criação) | Supabase não exibe após salvo — anotar "criado em DD/MM/AAAA" | | |
 
-### 3.2 Edge Function com acesso à chave
+### 3.2 Edge Function — requisição autenticada
 
 ```bash
-# Substitua PROJECT_REF e ANON_KEY
-curl -X POST "https://<PROJECT_REF>.supabase.co/functions/v1/gemini-chat" \
+# Substitua <PROJECT_REF> e <ANON_KEY>
+curl -s -o response.json -w "%{http_code}" \
+  -X POST "https://<PROJECT_REF>.supabase.co/functions/v1/gemini-chat" \
   -H "Authorization: Bearer <ANON_KEY>" \
   -H "Content-Type: application/json" \
-  -d '{"message": "Olá, Gemini! Responda com uma palavra."}'
+  -d '{"message": "Responda com exatamente uma palavra: funcionando."}'
+
+cat response.json
 ```
 
-| Critério | Esperado |
-|---|---|
-| HTTP status | `200` |
-| Body contém `"response"` | `true` |
-| Sem `"error": "missing GEMINI_API_KEY"` | `true` |
+| Critério | Esperado | ✓/✗ |
+|---|---|---|
+| HTTP status | `200` | |
+| Body contém chave `"response"` | `true` | |
+| Sem `"error": "missing GEMINI_API_KEY"` | `true` | |
 
-### 3.3 Fallback quando chave ausente
+### 3.3 Edge Function — sem autenticação (fallback de segurança)
 
 ```bash
-curl -X POST "https://<PROJECT_REF>.supabase.co/functions/v1/gemini-chat" \
+curl -s -w "\nHTTP: %{http_code}" \
+  -X POST "https://<PROJECT_REF>.supabase.co/functions/v1/gemini-chat" \
   -H "Content-Type: application/json" \
   -d '{"message": "teste"}'
 ```
 
-| Critério | Esperado |
-|---|---|
-| HTTP status | `401` ou `403` (não `500`) |
-| Body contém mensagem legível | `true` |
+| Critério | Esperado | ✓/✗ |
+|---|---|---|
+| HTTP status | `401` ou `403` (não `500`) | |
+| Body contém mensagem legível | `true` | |
+| Nenhuma chave exposta no body | `true` | |
 
----
-
-## 4. Validação no Rhema Care Flow (`/ai-panel`)
-
-### 4.1 Painel carrega sem erros
-
-| # | Verificação | Critério | ✓/✗ | Evidência |
-|---|---|---|---|---|
-| 4.1.1 | Rota `/ai-panel` acessível | Navegação sem 404 | | |
-| 4.1.2 | Console do browser sem erros vermelhos | DevTools → Console → 0 erros críticos | | |
-| 4.1.3 | Campo de mensagem visível | Input/textarea presente no DOM | | |
-| 4.1.4 | Botão de envio habilitado | Não está `disabled` na carga inicial | | |
-
-### 4.2 Fluxo de envio de mensagem
-
-| # | Passo | Critério de aprovação | ✓/✗ |
-|---|---|---|---|
-| 4.2.1 | Digitar mensagem e clicar "Enviar" | Indicador de loading aparece ≤ 500 ms | |
-| 4.2.2 | Aguardar resposta | Resposta do Gemini aparece ≤ 15 s | |
-| 4.2.3 | Resposta é texto legível | Sem `[object Object]` ou JSON cru | |
-| 4.2.4 | Histórico persiste durante a sessão | 2ª mensagem referencia contexto da 1ª | |
-
-### 4.3 Teste clínico reumatológico
-
-Enviar a seguinte mensagem no painel:
-
-> "Paciente 52 anos, FR positivo 1:320, anti-CCP positivo, erosões em RX de mãos bilaterais. Qual a classificação ACR/EULAR 2010?"
-
-| Critério | Esperado |
-|---|---|
-| Resposta menciona escore ≥ 6 pontos | `true` |
-| Cita critérios (sorológico, imagem, duração) | `true` |
-| Não inventa medicamentos sem solicitar | `true` |
-| Tom técnico/clínico mantido | `true` |
-
-### 4.4 Protocolo TMR — verificações de segurança
-
-> ⚠️ **NUNCA modificar dados do `rhema-care-flow` através do `gemibot`**
+### 3.4 Logs da Edge Function
 
 | # | Verificação | Critério | ✓/✗ |
 |---|---|---|---|
-| 4.4.1 | `gemibot` não tem acesso à API do Supabase do `rhema-care-flow` | Nenhuma `SUPABASE_URL` do projeto clínico no `.env` do `gemibot` | |
-| 4.4.2 | Sem rotas de escrita expostas pelo gemibot | Nenhum endpoint `POST/PUT/DELETE` que altera dados de pacientes | |
-| 4.4.3 | Logs de conversa isolados | Logs do gemibot não mesclam com registros clínicos | |
+| 3.4.1 | Sem erros nas últimas 10 invocações | Supabase Dashboard → Functions → Logs → 0 entradas com `status: error` | |
+| 3.4.2 | Tempo de resposta aceitável | Média < 10 s por invocação | |
 
 ---
 
-## 5. Validação de Logs e Monitoramento
+## 4. Protocolo TMR — Segurança de Dados Clínicos
+
+> ⚠️ **Regra absoluta:** O `gemibot` NUNCA deve ler ou escrever dados de pacientes no `rhema-care-flow`.
+
+| # | Verificação | Critério | ✓/✗ |
+|---|---|---|---|
+| 4.1 | `gemibot` sem `SUPABASE_URL` do projeto clínico | `grep -r "rhema" .env .env.example` → sem resultado | |
+| 4.2 | Sem endpoints de escrita de dados clínicos | Nenhum route `POST/PUT/DELETE` em `main.py` ou `services/` altera registros de pacientes | |
+| 4.3 | Sem importação direta do banco clínico | `grep -r "rhema-care-flow\|pacientes\|consultas" services/` → sem resultado relevante | |
+| 4.4 | Logs do gemibot isolados | Nenhum arquivo de log mescla IDs de pacientes reais com histórico de chat | |
+| 4.5 | Revisão manual do `services/gemini_api.py` | Nenhuma chamada a API externa além de `generativeai` | |
+
+---
+
+## 5. Validação no Rhema Care Flow (`/ai-panel`)
+
+### 5.1 Painel carrega
 
 | # | Verificação | Critério | ✓/✗ | Evidência |
 |---|---|---|---|---|
-| 5.1 | Log de inicialização Gemini | Linha `[GEMINI] API inicializada com sucesso` nos logs | | |
-| 5.2 | Log de erros quando chave inválida | Linha `[GEMINI] ERRO: chave inválida` em vez de traceback | | |
-| 5.3 | Tempo de resposta logado | Cada chamada loga `[GEMINI] tempo: Xs` | | |
-| 5.4 | Supabase Edge Function Logs | Dashboard → Functions → Logs → últimas 10 invocações sem `status: error` | | |
+| 5.1.1 | Rota `/ai-panel` acessível | Sem 404 | | |
+| 5.1.2 | Console do browser sem erros críticos | DevTools → Console → 0 erros vermelhos | | |
+| 5.1.3 | Campo de mensagem visível e funcional | Input/textarea presente e editável | | |
+| 5.1.4 | Botão enviar não está desabilitado | `disabled` ausente no estado inicial | | |
+
+### 5.2 Fluxo de envio
+
+| # | Passo | Critério | ✓/✗ |
+|---|---|---|---|
+| 5.2.1 | Digitar mensagem e enviar | Loading indicator ≤ 500 ms | |
+| 5.2.2 | Aguardar resposta | Texto do Gemini aparece ≤ 15 s | |
+| 5.2.3 | Resposta é texto legível | Sem `[object Object]` ou JSON bruto | |
+| 5.2.4 | Histórico da sessão preservado | 2ª pergunta acessa contexto da 1ª | |
+| 5.2.5 | Estado de erro exibido corretamente | Desconectar rede → mensagem de erro amigável (não traceback) | |
 
 ---
 
-## 6. GitHub Actions (CI/CD)
+## 6. Logs e Monitoramento
 
 | # | Verificação | Critério | ✓/✗ | Evidência |
 |---|---|---|---|---|
-| 6.1 | Secret `GEMINI_API_KEY` configurado no repo | Settings → Secrets → Actions → `GEMINI_API_KEY` listado | | |
-| 6.2 | Workflow passa sem expor a chave em logs | Logs do GitHub Actions não contêm `AIza...` | | |
-| 6.3 | Teste de smoke no pipeline | Job de teste retorna exit code 0 | | |
+| 6.1 | Log de inicialização Gemini | `[GEMINI] API inicializada` nos logs de startup | | |
+| 6.2 | Log de erro quando chave inválida | `[GEMINI] ERRO: chave inválida` em vez de traceback | | |
+| 6.3 | Tempo de resposta logado | Cada chamada registra `[GEMINI] tempo: Xs` | | |
+| 6.4 | Nenhuma chave nos logs | `grep -r "AIza" logs/` → sem resultado | | |
 
 ---
 
-## 7. Resumo Executivo
+## 7. GitHub Actions (CI/CD)
 
-| Categoria | Total | Aprovados | Reprovados | Status |
+| # | Verificação | Critério | ✓/✗ | Evidência |
 |---|---|---|---|---|
-| 1. Pré-requisitos | 8 | | | |
-| 2. Testes locais | 9 | | | |
-| 3. Supabase | 5 | | | |
-| 4. Rhema Care Flow | 11 | | | |
-| 5. Logs | 4 | | | |
-| 6. GitHub Actions | 3 | | | |
-| **TOTAL** | **40** | | | |
+| 7.1 | Secret `GEMINI_API_KEY` no repositório | Settings → Secrets → Actions → `GEMINI_API_KEY` listado | | |
+| 7.2 | Chave não exposta em logs | Logs do pipeline não contêm `AIza` | | |
+| 7.3 | Smoke test no pipeline passa | Job de teste → exit code `0` | | |
+| 7.4 | Deploy não quebra sem a chave | Pipeline com secret ausente retorna erro claro, não crash silencioso | | |
+
+---
+
+## 8. Resumo Executivo
+
+| Seção | Total de itens | Aprovados | Reprovados | N/A | Status |
+|---|---|---|---|---|---|
+| 1. Pré-requisitos | 13 | | | | |
+| 2. Testes locais | 13 | | | | |
+| 3. Supabase | 7 | | | | |
+| 4. Protocolo TMR | 5 | | | | |
+| 5. Rhema Care Flow | 9 | | | | |
+| 6. Logs | 4 | | | | |
+| 7. GitHub Actions | 4 | | | | |
+| **TOTAL** | **55** | | | | |
 
 **Responsável pela validação:** ___________________________
 
@@ -231,6 +284,8 @@ Enviar a seguinte mensagem no painel:
 
 **SHA do commit validado:** ________________________________
 
+**Versão do `google-generativeai` em uso:** ________________
+
 ---
 
-> **Nota de segurança:** Este arquivo pode ser commitado. Nunca preencher o campo Evidência com valores reais de chaves de API — usar apenas "OK confirmado" ou similar.
+> **Referências internas:** [`AGENTS.md`](./AGENTS.md) · [`services/gemini_api.py`](./services/gemini_api.py) · [`requirements.txt`](./requirements.txt)
